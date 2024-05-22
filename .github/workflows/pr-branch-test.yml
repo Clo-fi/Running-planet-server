@@ -1,0 +1,38 @@
+name: PR test pipeline
+
+on:  pull_request
+
+permissions:
+  checks: write
+  pull-requests: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: gradle build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build
+
+      - name: publish test result
+        if: always()
+        uses: EnricoMi/publish-unit-test-result-action/linux@v2
+        with:
+          files: '**/build/test-results/test/TEST-*.xml'
+
+      - name: add comment in fail test
+        if: always()
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: '**/build/test-results/test/TEST-*.xml'
+          token: ${{ github.token }}
