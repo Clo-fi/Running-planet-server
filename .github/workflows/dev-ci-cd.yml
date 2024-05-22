@@ -1,0 +1,50 @@
+name: dev ci cd pipeline
+
+on:
+  push:
+    branches:
+      - dev
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup JDK
+        uses: actions/setup-java@v3
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: gradle build
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build
+
+      - name: Archive build artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: my-artifact
+          path: build/libs/*.jar
+
+  deploy:
+    needs: build
+    runs-on: [self-hosted, dev]
+    steps:
+      - name: download build artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: my-artifact
+          path: ${{ secrets.build_path }}
+
+      - name: deploy temp
+        run: |
+          cd ${{ secrets.deploy_path }}
+          ./deploy_temp.sh
+
+      - name: deploy default
+        run: |
+          cd ${{ secrets.deploy_path }}
+          ./deploy_default.sh
