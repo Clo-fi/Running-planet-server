@@ -1,11 +1,9 @@
 package clofi.runningplanet.member.dto;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Map;
 
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 
 import clofi.runningplanet.member.domain.Member;
@@ -29,6 +27,10 @@ public class CustomOAuth2User implements OAuth2User {
 	@Override
 	public String getName() {
 		return member.getNickname();
+	}
+	
+	public Long getId() {
+		return member.getId();
 	}
 
 }

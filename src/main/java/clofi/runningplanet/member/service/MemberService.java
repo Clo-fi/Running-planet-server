@@ -8,13 +8,11 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-
 import clofi.runningplanet.member.domain.Member;
 import clofi.runningplanet.member.domain.OAuthType;
 import clofi.runningplanet.member.domain.SocialLogin;
 import clofi.runningplanet.member.dto.CustomOAuth2User;
 import clofi.runningplanet.member.dto.KakaoResponse;
-import clofi.runningplanet.member.dto.MemberResponse;
 import clofi.runningplanet.member.dto.OAuth2Response;
 import clofi.runningplanet.member.repository.MemberRepository;
 import clofi.runningplanet.member.repository.SocialLoginRepository;
@@ -49,27 +47,29 @@ public class MemberService extends DefaultOAuth2UserService {
 			String oAuthType = oAuth2Response.getProvider();
 			String oAuthId = oAuth2Response.getProviderId();
 
-			if (!socialLoginRepository.existsByOauthTypeAndOauthId(OAuthType.valueOf(oAuthType.toUpperCase()), oAuthId)){
+			if (!socialLoginRepository.existsByOauthTypeAndOauthId(OAuthType.valueOf(oAuthType.toUpperCase()),
+				oAuthId)) {
 
-			Member member = Member.builder()
-				.nickname(oAuth2Response.getName())
-				.profileImg(oAuth2Response.getProfileImage())
-				.build();
-			memberRepository.save(member);
+				Member member = Member.builder()
+					.nickname(oAuth2Response.getName())
+					.profileImg(oAuth2Response.getProfileImage())
+					.build();
+				Member savedMember = memberRepository.save(member);
 
-			SocialLogin socialLogin = SocialLogin.builder()
-				.member(member)
-				.oauthId(oAuth2Response.getProviderId())
-				.oauthType(OAuthType.valueOf(oAuth2Response.getProvider().toUpperCase()))
-				.externalEmail(oAuth2Response.getEmail())
-				.build();
-			socialLoginRepository.save(socialLogin);
+				SocialLogin socialLogin = SocialLogin.builder()
+					.member(savedMember)
+					.oauthId(oAuth2Response.getProviderId())
+					.oauthType(OAuthType.valueOf(oAuth2Response.getProvider().toUpperCase()))
+					.externalEmail(oAuth2Response.getEmail())
+					.build();
+				socialLoginRepository.save(socialLogin);
 
-			return new CustomOAuth2User(member);
+				return new CustomOAuth2User(savedMember);
 
 			} else {
 
-				SocialLogin socialLogin = socialLoginRepository.findByOauthTypeAndOauthId(OAuthType.valueOf(oAuthType.toUpperCase()),oAuthId);
+				SocialLogin socialLogin = socialLoginRepository.findByOauthTypeAndOauthId(
+					OAuthType.valueOf(oAuthType.toUpperCase()), oAuthId);
 				Member member = socialLogin.getMember();
 
 				//TODO 패치조인으로 수정
@@ -84,11 +84,6 @@ public class MemberService extends DefaultOAuth2UserService {
 				"The registration id is invalid: " + registrationId, null);
 			throw new OAuth2AuthenticationException(oauth2Error, oauth2Error.getDescription());
 		}
-	}
-
-	public MemberResponse getMember(Long memberId) {
-
-		return null;
 	}
 
 }
