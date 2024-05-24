@@ -8,6 +8,8 @@ import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import clofi.runningplanet.member.domain.Member;
+import clofi.runningplanet.member.repository.MemberRepository;
 import clofi.runningplanet.running.domain.Coordinate;
 import clofi.runningplanet.running.domain.Record;
 import clofi.runningplanet.running.dto.RecordFindAllResponse;
@@ -24,21 +26,23 @@ import lombok.RequiredArgsConstructor;
 public class RecordService {
 	private final RecordRepository recordRepository;
 	private final CoordinateRepository coordinateRepository;
+	private final MemberRepository memberRepository;
 
 	@Transactional
-	public Record save(RecordSaveRequest request) {
-		// TODO: member 조회 및 최근 기록 조회, 종료되지 않은 기록이 있으면 업데이트하기
-		Record record = Record.builder()
-			.runTime(request.runTime())
-			.runDistance(request.runDistance())
-			.calories(request.calories())
-			.avgPace(request.avgPace().min() * 60 + request.avgPace().sec())
-			.build();
+	public Record save(RecordSaveRequest request, String username) {
+		Member member = memberRepository.findByNickname(username);
+		Record record = recordRepository.findOneByMemberAndEndTimeIsNull(member)
+			.orElse(Record.builder().member(member).build());
+
+		record.update(request.runTime(), request.runDistance(), request.calories(), request.avgPace().min(),
+			request.avgPace().sec());
 
 		Record savedRecord = recordRepository.save(record);
 
+		savedRecord.end(request.isEnd(), LocalDateTime.now());
+
 		Coordinate coordinate = Coordinate.builder()
-			.record(record)
+			.record(savedRecord)
 			.latitude(request.latitude())
 			.longitude(request.longitude())
 			.build();
@@ -48,21 +52,22 @@ public class RecordService {
 		return savedRecord;
 	}
 
-	public List<RecordFindAllResponse> findAll(Integer year, Integer month) {
+	public List<RecordFindAllResponse> findAll(Integer year, Integer month, String username) {
+		Member member = memberRepository.findByNickname(username);
 		YearMonth yearMonth = YearMonth.of(year, month);
 		LocalDateTime startDateTime = yearMonth.atDay(1).atStartOfDay();
 		LocalDateTime endDateTime = yearMonth.atEndOfMonth().atTime(23, 59, 59);
 		List<Record> records = recordRepository
-			.findAllByCreatedAtBetweenAndEndTimeIsNotNull(startDateTime, endDateTime);
+			.findAllByMemberAndCreatedAtBetweenAndEndTimeIsNotNull(member, startDateTime, endDateTime);
 
 		return records.stream()
 			.map(RecordFindAllResponse::new)
 			.toList();
 	}
 
-	public RecordFindResponse find(Long recordId) {
-		// TODO: 회원 정보도 조건에 추가하기
-		Record record = recordRepository.findByIdAndEndTimeIsNotNull(recordId)
+	public RecordFindResponse find(Long recordId, String username) {
+		Member member = memberRepository.findByNickname(username);
+		Record record = recordRepository.findByIdAndMemberAndEndTimeIsNotNull(recordId, member)
 			.orElseThrow(() -> new IllegalArgumentException("운동 기록을 찾을 수 없습니다."));
 
 		List<Coordinate> coordinates = coordinateRepository.findAllByRecord(record);
@@ -70,9 +75,9 @@ public class RecordService {
 		return new RecordFindResponse(record, coordinates);
 	}
 
-	public RecordFindCurrentResponse findCurrentRecord() {
-		// TODO: 회원 정보도 조건에 추가하기
-		Optional<Record> optionalRecord = recordRepository.findOneByEndTimeIsNull();
+	public RecordFindCurrentResponse findCurrentRecord(String username) {
+		Member member = memberRepository.findByNickname(username);
+		Optional<Record> optionalRecord = recordRepository.findOneByMemberAndEndTimeIsNull(member);
 		if (optionalRecord.isEmpty()) {
 			return null;
 		}
@@ -82,4 +87,5 @@ public class RecordService {
 
 		return new RecordFindCurrentResponse(record, coordinate);
 	}
+
 }

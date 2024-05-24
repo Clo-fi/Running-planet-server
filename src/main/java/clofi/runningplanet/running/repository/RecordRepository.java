@@ -6,14 +6,14 @@ import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import clofi.runningplanet.member.domain.Member;
 import clofi.runningplanet.running.domain.Record;
 
-// TODO: 조건에 Member 추가하기
 public interface RecordRepository extends JpaRepository<Record, Long> {
 
-	Optional<Record> findByIdAndEndTimeIsNotNull(Long id);
+	Optional<Record> findByIdAndMemberAndEndTimeIsNotNull(Long id, Member member);
 
-	Optional<Record> findOneByEndTimeIsNull();
+	List<Record> findAllByMemberAndCreatedAtBetweenAndEndTimeIsNotNull(Member member, LocalDateTime start, LocalDateTime end);
 
-	List<Record> findAllByCreatedAtBetweenAndEndTimeIsNotNull(LocalDateTime start, LocalDateTime end);
+	Optional<Record> findOneByMemberAndEndTimeIsNull(Member member);
 }

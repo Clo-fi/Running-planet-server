@@ -31,9 +31,9 @@ public class Record extends BaseSoftDeleteEntity {
 	@Column(name = "record_id", nullable = false)
 	private Long id;
 
-	// @ManyToOne(fetch = FetchType.LAZY)
-	// @JoinColumn(name = "member_id", nullable = false)
-	// private Member member;
+	@ManyToOne(fetch = FetchType.LAZY)
+	@JoinColumn(name = "member_id", nullable = false)
+	private Member member;
 
 	@Column(name = "run_time", nullable = false)
 	private int runTime;
@@ -51,11 +51,25 @@ public class Record extends BaseSoftDeleteEntity {
 	private LocalDateTime endTime;
 
 	@Builder
-	private Record(int runTime, double runDistance, int calories, int avgPace, LocalDateTime endTime) {
+	private Record(Member member, int runTime, double runDistance, int calories, int avgPace, LocalDateTime endTime) {
+		this.member = member;
 		this.runTime = runTime;
 		this.runDistance = runDistance;
 		this.calories = calories;
 		this.avgPace = avgPace;
 		this.endTime = endTime;
+	}
+
+	public void update(int runTime, double runDistance, int calories, int min, int sec) {
+		this.runTime = runTime;
+		this.runDistance = runDistance;
+		this.calories = calories;
+		this.avgPace = min * 60 + sec;
+	}
+
+	public void end(boolean isEnd, LocalDateTime endTime) {
+		if (isEnd) {
+			this.endTime = endTime;
+		}
 	}
 }

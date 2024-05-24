@@ -17,6 +17,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.SpyBean;
 import org.springframework.data.auditing.AuditingHandler;
 
+import clofi.runningplanet.member.domain.Gender;
+import clofi.runningplanet.member.domain.Member;
+import clofi.runningplanet.member.repository.MemberRepository;
 import clofi.runningplanet.running.domain.Coordinate;
 import clofi.runningplanet.running.domain.Record;
 import clofi.runningplanet.running.dto.RecordFindAllResponse;
@@ -37,6 +40,9 @@ class RecordServiceTest {
 	@Autowired
 	CoordinateRepository coordinateRepository;
 
+	@Autowired
+	MemberRepository memberRepository;
+
 	@SpyBean
 	private AuditingHandler auditingHandler;
 
@@ -44,13 +50,12 @@ class RecordServiceTest {
 	void tearDown() {
 		coordinateRepository.deleteAllInBatch();
 		recordRepository.deleteAllInBatch();
+		memberRepository.deleteAllInBatch();
 	}
 
 	@DisplayName("운동, 좌표 정보로 운동 기록을 생성할 수 있다.")
 	@Test
 	void saveRecord() {
-		//TODO: 회원 기능 구현 후 로직 추가 작성
-
 		// given
 		RecordSaveRequest recordSaveRequest = new RecordSaveRequest(
 			100.23,
@@ -66,7 +71,8 @@ class RecordServiceTest {
 		);
 
 		// when
-		Record savedRecord = recordService.save(recordSaveRequest);
+		Member member = memberRepository.save(createMember());
+		Record savedRecord = recordService.save(recordSaveRequest, member.getNickname());
 
 		// then
 		assertThat(savedRecord.getId()).isNotNull();
@@ -81,31 +87,85 @@ class RecordServiceTest {
 			.contains(100.23, 200.23);
 	}
 
+	@DisplayName("종료되지 않은 기록을 업데이트하고, 좌표를 추가할 수 있다.")
+	@Test
+	void updateRecordAndAddCoordinate() {
+		// given
+		RecordSaveRequest recordSaveRequest1 = new RecordSaveRequest(
+			100.23,
+			200.23,
+			630,
+			1.23,
+			300,
+			new RecordSaveRequest.AvgPace(
+				8,
+				20
+			),
+			false
+		);
+
+		Member member = memberRepository.save(createMember());
+		recordService.save(recordSaveRequest1, member.getNickname());
+
+		RecordSaveRequest recordSaveRequest2 = new RecordSaveRequest(
+			200.23,
+			300.23,
+			900,
+			2.0,
+			400,
+			new RecordSaveRequest.AvgPace(
+				10,
+				30
+			),
+			true
+		);
+
+		// when
+		Record updatedRecord = recordService.save(recordSaveRequest2, member.getNickname());
+
+		// then
+		assertThat(updatedRecord.getId()).isNotNull();
+		assertThat(updatedRecord)
+			.extracting("runTime", "runDistance", "calories", "avgPace")
+			.contains(900, 2.0, 400, 630);
+		assertThat(updatedRecord.getEndTime()).isNotNull();
+
+		List<Coordinate> savedCoordinates = coordinateRepository.findAllByRecord(updatedRecord);
+		assertThat(savedCoordinates).hasSize(2)
+			.extracting("latitude", "longitude")
+			.containsExactlyInAnyOrder(
+				tuple(100.23, 200.23),
+				tuple(200.23, 300.23)
+			);
+	}
+
 	@DisplayName("year, month 로 운동 기록을 조회할 수 있다.")
 	@Test
 	void findAllRecordsByYearAndMonth() {
 		// given
+		Member member = memberRepository.save(createMember());
+
 		LocalDateTime createdDateTime1 = createLocalDateTime("2024-01-31 23:59:59");
 		auditingHandler.setDateTimeProvider(() -> Optional.of(createdDateTime1));
-		Record record1 = createRecord(65, 1.00, 1000, 100,
+		Record record1 = createRecord(member, 65, 1.00, 1000, 100,
 			createdDateTime1.plus(Duration.of(1000, ChronoUnit.SECONDS)));
 		recordRepository.save(record1);
 
 		LocalDateTime createdDateTime2 = createLocalDateTime("2024-02-01 00:00:00");
 		auditingHandler.setDateTimeProvider(() -> Optional.of(createdDateTime2));
-		Record record2 = createRecord(65, 2.00, 2000, 200,
+		Record record2 = createRecord(member, 65, 2.00, 2000, 200,
 			createdDateTime2.plus(Duration.of(2000, ChronoUnit.SECONDS)));
 		recordRepository.save(record2);
 
 		LocalDateTime createdDateTime3 = createLocalDateTime("2024-02-29 23:59:59");
 		auditingHandler.setDateTimeProvider(() -> Optional.of(createdDateTime3));
-		Record record3 = createRecord(65, 3.00, 3000, 300,
+		Record record3 = createRecord(member, 65, 3.00, 3000, 300,
 			createdDateTime3.plus(Duration.of(3000, ChronoUnit.SECONDS)));
 		recordRepository.save(record3);
 
 		LocalDateTime createdDateTime4 = createLocalDateTime("2024-03-01 00:00:00");
 		auditingHandler.setDateTimeProvider(() -> Optional.of(createdDateTime4));
-		Record record4 = createRecord(65, 4.00, 4000, 400,
+		Record record4 = createRecord(member, 65, 4.00, 4000, 400,
 			createdDateTime4.plus(Duration.of(4000, ChronoUnit.SECONDS)));
 		recordRepository.save(record4);
 
@@ -113,7 +173,7 @@ class RecordServiceTest {
 		int month = 2;
 
 		// when
-		List<RecordFindAllResponse> response = recordService.findAll(year, month);
+		List<RecordFindAllResponse> response = recordService.findAll(year, month, member.getNickname());
 
 		assertThat(response).hasSize(2)
 			.extracting("id", "runDistance", "day")
@@ -127,8 +187,10 @@ class RecordServiceTest {
 	@Test
 	void findRecord() {
 		// given
+		Member member = memberRepository.save(createMember());
+
 		LocalDateTime endTime = LocalDateTime.now().withNano(0);
-		Record record = createRecord(65, 1.00, 3665, 300, endTime);
+		Record record = createRecord(member, 65, 1.00, 3665, 300, endTime);
 		Coordinate coordinate1 = createCoordinate(record, 10.00, 20.00);
 		Coordinate coordinate2 = createCoordinate(record, 20.00, 30.00);
 		Record savedRecord = recordRepository.save(record);
@@ -138,7 +200,7 @@ class RecordServiceTest {
 		Long recordId = savedRecord.getId();
 
 		// when
-		RecordFindResponse response = recordService.find(recordId);
+		RecordFindResponse response = recordService.find(recordId, member.getNickname());
 
 		// then
 		assertThat(response.id()).isNotNull();
@@ -163,13 +225,40 @@ class RecordServiceTest {
 	@Test
 	void findUnfinishedRecord() {
 		// given
-		Record record = createRecord(65, 1.00, 3665, 300, null);
+		Member member = memberRepository.save(createMember());
+
+		Record record = createRecord(member, 65, 1.00, 3665, 300, null);
 		Record saved = recordRepository.save(record);
 		Long recordId = saved.getId();
 
 		// when & then
 		assertThatIllegalArgumentException()
-			.isThrownBy(() -> recordService.find(recordId))
+			.isThrownBy(() -> recordService.find(recordId, member.getNickname()))
+			.withMessage("운동 기록을 찾을 수 없습니다.");
+	}
+
+	@DisplayName("운동 아이디가 존재하지 않거나, 자신의 운동 기록이 아니면 예외가 발생한다.")
+	@Test
+	void findRecordByInvalidRequest() {
+		// given
+		Member member = memberRepository.save(createMember());
+
+		LocalDateTime endTime = LocalDateTime.now().withNano(0);
+		Record record = createRecord(member, 65, 1.00, 3665, 300, endTime);
+		Coordinate coordinate1 = createCoordinate(record, 10.00, 20.00);
+		Coordinate coordinate2 = createCoordinate(record, 20.00, 30.00);
+		Record savedRecord = recordRepository.save(record);
+		coordinateRepository.save(coordinate1);
+		coordinateRepository.save(coordinate2);
+
+		Long recordId = savedRecord.getId();
+
+		// when & then
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> recordService.find(recordId + 1, member.getNickname()))
+			.withMessage("운동 기록을 찾을 수 없습니다.");
+		assertThatIllegalArgumentException()
+			.isThrownBy(() -> recordService.find(recordId, "someone"))
 			.withMessage("운동 기록을 찾을 수 없습니다.");
 	}
 
@@ -177,7 +266,9 @@ class RecordServiceTest {
 	@Test
 	void findCurrentRecord() {
 		// given
-		Record record = createRecord(65, 1.00, 3665, 300, null);
+		Member member = memberRepository.save(createMember());
+
+		Record record = createRecord(member, 65, 1.00, 3665, 300, null);
 		Coordinate coordinate1 = createCoordinate(record, 10.00, 20.00);
 		Coordinate coordinate2 = createCoordinate(record, 20.00, 30.00);
 		recordRepository.save(record);
@@ -185,7 +276,7 @@ class RecordServiceTest {
 		coordinateRepository.save(coordinate2);
 
 		// when
-		RecordFindCurrentResponse response = recordService.findCurrentRecord();
+		RecordFindCurrentResponse response = recordService.findCurrentRecord(member.getNickname());
 
 		// then
 		assertThat(response.id()).isNotNull();
@@ -204,20 +295,37 @@ class RecordServiceTest {
 	@Test
 	void findCurrentWorkoutRecordWhenNoneUnfinished() {
 		// given
-		Record record = createRecord(65, 1.00, 3665, 300, LocalDateTime.now());
+		Member member = memberRepository.save(createMember());
+
+		Record record = createRecord(member, 65, 1.00, 3665, 300, LocalDateTime.now());
 		Coordinate coordinate = createCoordinate(record, 10.00, 20.00);
 		recordRepository.save(record);
 		coordinateRepository.save(coordinate);
 
 		// when
-		RecordFindCurrentResponse response = recordService.findCurrentRecord();
+		RecordFindCurrentResponse response = recordService.findCurrentRecord(member.getNickname());
 
 		// then
 		assertThat(response).isNull();
 	}
 
-	private Record createRecord(int avgPace, double runDistance, int runTime, int calories, LocalDateTime endTime) {
+	private Member createMember() {
+		return Member.builder()
+			.nickname("감자")
+			.profileImg(
+				"https://d2u3dcdbebyaiu.cloudfront.net/uploads/atch_img/321/d4c6b40843af7f4f1d8000cafef4a2e7.jpeg")
+			.age(3)
+			.gender(Gender.MALE)
+			.runScore(10)
+			.avgPace(600)
+			.totalDistance(3000)
+			.build();
+	}
+
+	private Record createRecord(Member member, int avgPace, double runDistance, int runTime, int calories,
+		LocalDateTime endTime) {
 		return Record.builder()
+			.member(member)
 			.avgPace(avgPace)
 			.runDistance(runDistance)
 			.runTime(runTime)
