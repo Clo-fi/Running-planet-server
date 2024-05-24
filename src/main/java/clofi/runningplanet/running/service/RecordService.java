@@ -34,11 +34,9 @@ public class RecordService {
 		Record record = getCurrentRecordOrElseNew(member);
 
 		record.update(request.runTime(), request.runDistance(), request.calories(), request.avgPace().min(),
-			request.avgPace().sec());
+			request.avgPace().sec(), request.isEnd());
 
 		Record savedRecord = recordRepository.save(record);
-
-		savedRecord.end(request.isEnd(), LocalDateTime.now());
 
 		Coordinate coordinate = request.toCoordinate(savedRecord);
 		coordinateRepository.save(coordinate);

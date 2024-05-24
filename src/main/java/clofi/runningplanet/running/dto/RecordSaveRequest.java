@@ -23,7 +23,7 @@ public record RecordSaveRequest(
 	@NotNull
 	AvgPace avgPace,
 
-	boolean isEnd
+	Boolean isEnd
 ) {
 	public Coordinate toCoordinate(Record savedRecord) {
 		return Coordinate.builder()
