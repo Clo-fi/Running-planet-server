@@ -30,9 +30,8 @@ public class RecordService {
 
 	@Transactional
 	public Record save(RecordSaveRequest request, String username) {
-		Member member = memberRepository.findByNickname(username);
-		Record record = recordRepository.findOneByMemberAndEndTimeIsNull(member)
-			.orElse(Record.builder().member(member).build());
+		Member member = getMember(username);
+		Record record = getCurrentRecordOrElseNew(member);
 
 		record.update(request.runTime(), request.runDistance(), request.calories(), request.avgPace().min(),
 			request.avgPace().sec());
@@ -41,51 +40,71 @@ public class RecordService {
 
 		savedRecord.end(request.isEnd(), LocalDateTime.now());
 
-		Coordinate coordinate = Coordinate.builder()
-			.record(savedRecord)
-			.latitude(request.latitude())
-			.longitude(request.longitude())
-			.build();
-
+		Coordinate coordinate = request.toCoordinate(savedRecord);
 		coordinateRepository.save(coordinate);
 
 		return savedRecord;
 	}
 
+	private Member getMember(String username) {
+		return memberRepository.findByNickname(username);
+	}
+
+	private Record getCurrentRecordOrElseNew(Member member) {
+		return recordRepository.findOneByMemberAndEndTimeIsNull(member)
+			.orElse(Record.builder().member(member).build());
+	}
+
 	public List<RecordFindAllResponse> findAll(Integer year, Integer month, String username) {
-		Member member = memberRepository.findByNickname(username);
+		Member member = getMember(username);
 		YearMonth yearMonth = YearMonth.of(year, month);
-		LocalDateTime startDateTime = yearMonth.atDay(1).atStartOfDay();
-		LocalDateTime endDateTime = yearMonth.atEndOfMonth().atTime(23, 59, 59);
-		List<Record> records = recordRepository
-			.findAllByMemberAndCreatedAtBetweenAndEndTimeIsNotNull(member, startDateTime, endDateTime);
+
+		LocalDateTime startDateTime = getStartDateTime(yearMonth);
+		LocalDateTime endDateTime = getEndDateTime(yearMonth);
+		List<Record> records = recordRepository.findAllByMemberAndCreatedAtBetweenAndEndTimeIsNotNull(member,
+			startDateTime, endDateTime);
 
 		return records.stream()
 			.map(RecordFindAllResponse::new)
 			.toList();
 	}
 
-	public RecordFindResponse find(Long recordId, String username) {
-		Member member = memberRepository.findByNickname(username);
-		Record record = recordRepository.findByIdAndMemberAndEndTimeIsNotNull(recordId, member)
-			.orElseThrow(() -> new IllegalArgumentException("운동 기록을 찾을 수 없습니다."));
+	private LocalDateTime getStartDateTime(YearMonth yearMonth) {
+		return yearMonth.atDay(1).atStartOfDay();
+	}
 
+	private static LocalDateTime getEndDateTime(YearMonth yearMonth) {
+		return yearMonth.atEndOfMonth().atTime(23, 59, 59);
+	}
+
+	public RecordFindResponse find(Long recordId, String username) {
+		Member member = getMember(username);
+		Record record = getCurrentRecord(recordId, member);
 		List<Coordinate> coordinates = coordinateRepository.findAllByRecord(record);
 
 		return new RecordFindResponse(record, coordinates);
 	}
 
+	private Record getCurrentRecord(Long recordId, Member member) {
+		return recordRepository.findByIdAndMemberAndEndTimeIsNotNull(recordId, member)
+			.orElseThrow(() -> new IllegalArgumentException("운동 기록을 찾을 수 없습니다."));
+	}
+
 	public RecordFindCurrentResponse findCurrentRecord(String username) {
-		Member member = memberRepository.findByNickname(username);
+		Member member = getMember(username);
 		Optional<Record> optionalRecord = recordRepository.findOneByMemberAndEndTimeIsNull(member);
 		if (optionalRecord.isEmpty()) {
 			return null;
 		}
 		Record record = optionalRecord.get();
-		Coordinate coordinate = coordinateRepository.findFirstByRecordOrderByCreatedAtDesc(record)
-			.orElseThrow(() -> new IllegalArgumentException("좌표 정보를 찾을 수 없습니다."));
+		Coordinate coordinate = getLastCoordinate(record);
 
 		return new RecordFindCurrentResponse(record, coordinate);
+	}
+
+	private Coordinate getLastCoordinate(Record record) {
+		return coordinateRepository.findFirstByRecordOrderByCreatedAtDesc(record)
+			.orElseThrow(() -> new IllegalArgumentException("좌표 정보를 찾을 수 없습니다."));
 	}
 
 }
