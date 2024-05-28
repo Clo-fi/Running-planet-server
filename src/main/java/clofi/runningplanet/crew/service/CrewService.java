@@ -89,10 +89,7 @@ public class CrewService {
 
 	@Transactional(readOnly = true)
 	public ApprovalMemberResDto getApplyCrewList(Long crewId, Long memberId) {
-		CrewMember findCrewMember = getCrewMemberByMemberId(memberId);
-
-		findCrewMember.validateMembership(crewId);
-		findCrewMember.checkLeaderPrivilege();
+		validateLeaderPrivilege(crewId, memberId);
 		checkCrewExistById(crewId);
 
 		List<CrewApplication> crewApplicationList = crewApplicationRepository.findAllByCrewId(crewId);
@@ -103,17 +100,38 @@ public class CrewService {
 	@Transactional
 	public void proceedApplyCrew(ProceedApplyReqDto reqDto, Long crewId, Long memberId) {
 		Crew findCrew = getCrewByCrewId(crewId);
-		Member leader = getMemberByMemberId(memberId);
+		validateLeaderPrivilege(crewId, memberId);
+
 		CrewApplication crewApplication = getCrewApplicationByCrewIdAndMemberId(crewId, reqDto.memberId());
 		validateMemberNotInCrew(reqDto.memberId());
-		Member applyMember = getMemberByMemberId(reqDto.memberId());
 
 		if (reqDto.isApproval()) {
-			crewApplication.approve();
-			CrewMember crewMember = CrewMember.createMember(findCrew, applyMember);
-			crewMemberRepository.save(crewMember);
+			processApproval(reqDto, findCrew, crewApplication);
 		} else {
 			crewApplication.reject();
+		}
+	}
+
+	private void processApproval(ProceedApplyReqDto reqDto, Crew findCrew, CrewApplication crewApplication) {
+		validateCrewMemberLimit(findCrew);
+
+		Member applyMember = getMemberByMemberId(reqDto.memberId());
+		crewApplication.approve();
+		CrewMember crewMember = CrewMember.createMember(findCrew, applyMember);
+		crewMemberRepository.save(crewMember);
+	}
+
+	private void validateLeaderPrivilege(Long crewId, Long memberId) {
+		CrewMember findCrewMember = getCrewMemberByMemberId(memberId);
+		findCrewMember.validateMembership(crewId);
+		findCrewMember.checkLeaderPrivilege();
+	}
+
+	private void validateCrewMemberLimit(Crew crew) {
+		List<CrewMember> crewMemberList = crewMemberRepository.findByCrewId(crew.getId());
+		int memberCnt = crewMemberList.size();
+		if (crew.getLimitMemberCnt() <= memberCnt) {
+			throw new ConflictException("최대 인원수를 초과해서 크루원을 받을 수 없습니다.");
 		}
 	}
 
