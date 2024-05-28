@@ -56,7 +56,7 @@ class BoardQueryServiceTest {
 	@Test
 	void createBoardTest() {
 		//given
-		Member memberInstance = new Member(null, "테스트", Gender.FEMALE, 10, 100,"테스트", 10, 10, 10, 10);
+		Member memberInstance = new Member(null, "테스트", Gender.FEMALE, 10, "테스트", 10, 10, 10, 10);
 		Member member = memberRepository.save(memberInstance);
 		Crew crewInstance = new Crew(1L, "테스트", 10, 10, Category.RUNNING, ApprovalType.AUTO, "테스트", 10, 10);
 		Crew crew = crewRepository.save(crewInstance);
@@ -83,7 +83,7 @@ class BoardQueryServiceTest {
 	@Transactional
 	void updateTest() {
 		//given
-		Member memberInstance = new Member(null, "테스트", Gender.FEMALE, 10, 100,"테스트", 10, 10, 10, 10);
+		Member memberInstance = new Member(null, "테스트", Gender.FEMALE, 10, "테스트", 10, 10, 10, 10);
 		Member member = memberRepository.save(memberInstance);
 		Crew crewInstance = new Crew(1L, "테스트", 10, 10, Category.RUNNING, ApprovalType.AUTO, "테스트", 10, 10);
 		Crew crew = crewRepository.save(crewInstance);

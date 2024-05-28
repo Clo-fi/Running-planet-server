@@ -46,8 +46,8 @@ class BoardReadServiceTest {
 	@Test
 	void getBoardDetail() {
 		//given
-		Member member = new Member(null, "테스트", Gender.MALE, 10, 100, "테스트", 10, 10, 10, 10);
-		Member commentMember = new Member(null, "댓글 테스트", Gender.MALE, 10, 100, "테스트", 10, 10, 10, 10);
+		Member member = new Member(null, "테스트", Gender.MALE, 10, "테스트", 10, 10, 10, 10);
+		Member commentMember = new Member(null, "댓글 테스트", Gender.MALE, 10, "테스트", 10, 10, 10, 10);
 		memberRepository.save(member);
 		memberRepository.save(commentMember);
 		Crew crewInstance = new Crew(1L, "테스트", 10, 10, Category.RUNNING, ApprovalType.AUTO, "테스트", 10, 10);

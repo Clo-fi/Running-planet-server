@@ -12,7 +12,6 @@ import org.springframework.web.multipart.MultipartFile;
 import clofi.runningplanet.member.dto.CustomOAuth2User;
 import clofi.runningplanet.member.dto.request.UpdateProfileRequest;
 import clofi.runningplanet.member.dto.response.ProfileResponse;
-import clofi.runningplanet.member.dto.response.SelfProfileResponse;
 import clofi.runningplanet.member.dto.response.UpdateProfileResponse;
 import clofi.runningplanet.member.service.MemberService;
 import lombok.RequiredArgsConstructor;
@@ -27,15 +26,6 @@ public class MemberController {
 	public ResponseEntity<ProfileResponse> getProfile(@PathVariable("memberId") Long memberId) {
 
 		return ResponseEntity.ok(memberService.getProfile(memberId));
-	}
-
-	@GetMapping("/api/profile")
-	public ResponseEntity<SelfProfileResponse> getSelfProfile(
-		@AuthenticationPrincipal CustomOAuth2User customOAuth2User
-	) {
-		Long memberId = customOAuth2User.getId();
-
-		return ResponseEntity.ok(memberService.getSelfProfile(memberId));
 	}
 
 	@PatchMapping("/api/profile")

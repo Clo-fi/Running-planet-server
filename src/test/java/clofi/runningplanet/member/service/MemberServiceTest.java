@@ -22,7 +22,6 @@ import clofi.runningplanet.member.domain.Gender;
 import clofi.runningplanet.member.domain.Member;
 import clofi.runningplanet.member.dto.request.UpdateProfileRequest;
 import clofi.runningplanet.member.dto.response.ProfileResponse;
-import clofi.runningplanet.member.dto.response.SelfProfileResponse;
 import clofi.runningplanet.member.repository.MemberRepository;
 import clofi.runningplanet.member.repository.SocialLoginRepository;
 
@@ -39,7 +38,6 @@ class MemberServiceTest {
 
 	@Autowired
 	CrewRepository crewRepository;
-
 	@Autowired
 	private SocialLoginRepository socialLoginRepository;
 
@@ -52,7 +50,7 @@ class MemberServiceTest {
 
 	@DisplayName("memberId로 조회할 수 있다.")
 	@Test
-	void getProfileTest() {
+	void getProfileWithCrew() {
 		//given
 		//크루 있는 경우
 		Member member1 = Member.builder()
@@ -95,54 +93,6 @@ class MemberServiceTest {
 		assertThat(profileResponseWithoutCrew).isNotNull();
 		assertThat(profileResponseWithoutCrew.nickname()).isEqualTo(member2.getNickname());
 		assertThat(profileResponseWithoutCrew.myCrew()).isNull();
-	}
-
-	@DisplayName("개인프로필을 조회할 수 있다.")
-	@Test
-	void getSelfProfileTest() {
-		//given
-		//크루 있는 경우
-		Member member1 = Member.builder()
-			.nickname("고구마1")
-			.profileImg(
-				"https://pbs.twimg.com/media/E86TJH1VkAQ0BGV.png")
-			.age(34)
-			.gender(Gender.MALE)
-			.runScore(20)
-			.avgPace(2400)
-			.avgDistance(5000)
-			.totalDistance(30000)
-			.build();
-		memberRepository.save(member1);
-
-		Crew crew1 = new Crew(
-			member1.getId(),"고구마크루" ,5,10, Category.RUNNING, ApprovalType.AUTO,"소개글",7,1);
-		crewRepository.save(crew1);
-
-		CrewMember crewMember1 = CrewMember.builder()
-			.member(member1)
-			.role(Role.LEADER)
-			.crew(crew1)
-			.build();
-		crewMemberRepository.save(crewMember1);
-
-		//크루 없는 경우
-		Member member2 = memberRepository.save(createMember());
-
-		//when
-		SelfProfileResponse profileResponseWithCrew = memberService.getSelfProfile(member1.getId());
-		SelfProfileResponse profileResponseWithoutCrew = memberService.getSelfProfile(member2.getId());
-
-		//then
-		assertThat(profileResponseWithCrew).isNotNull();
-		assertThat(profileResponseWithCrew.nickname()).isEqualTo(member1.getNickname());
-		assertThat(profileResponseWithCrew.myCrew()).isEqualTo("고구마크루");
-		assertThat(profileResponseWithCrew.myCrewId()).isEqualTo(crewMember1.getCrew().getId());
-
-		assertThat(profileResponseWithoutCrew).isNotNull();
-		assertThat(profileResponseWithoutCrew.nickname()).isEqualTo(member2.getNickname());
-		assertThat(profileResponseWithoutCrew.myCrew()).isNull();
-		assertThat(profileResponseWithoutCrew.myCrewId()).isNull();
 	}
 
 	@DisplayName("프로필을 수정할 수 있다.")
