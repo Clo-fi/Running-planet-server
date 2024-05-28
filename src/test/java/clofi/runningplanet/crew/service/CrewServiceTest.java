@@ -660,4 +660,31 @@ class CrewServiceTest {
 		assertThatThrownBy(() -> crewService.proceedApplyCrew(reqDto, crewId, memberId))
 			.isInstanceOf(NotFoundException.class);
 	}
+
+	@DisplayName("크루 가입 신청하지 않은 사용자를 승인/거절할 경우 예외 발생")
+	@Test
+	void failApproveCrew() {
+		//given
+		ProceedApplyReqDto reqDto = new ProceedApplyReqDto(2L, true);
+		Long crewId = 1L;
+		Long memberId = 1L;
+
+		Crew crew = new Crew(1L, 1L, "구름 크루", 10, 50,
+			RUNNING, MANUAL, "구름 크루는 성실한 크루", 5, 100,
+			0, 0);
+
+		CrewMember crewMember = new CrewMember(1L, crew, MEMBER, Role.LEADER);
+
+		given(crewRepository.findById(anyLong()))
+			.willReturn(Optional.of(crew));
+		given(crewMemberRepository.findByMemberId(anyLong()))
+			.willReturn(Optional.of(crewMember));
+		given(crewApplicationRepository.findByCrewIdAndMemberId(anyLong(), anyLong()))
+			.willReturn(Optional.empty());
+
+		//when
+		//then
+		assertThatThrownBy(() -> crewService.proceedApplyCrew(reqDto, crewId, memberId))
+			.isInstanceOf(NotFoundException.class);
+	}
 }
