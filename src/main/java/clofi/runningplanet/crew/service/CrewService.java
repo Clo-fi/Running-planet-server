@@ -15,6 +15,7 @@ import clofi.runningplanet.crew.domain.Tag;
 import clofi.runningplanet.crew.dto.CrewLeaderDto;
 import clofi.runningplanet.crew.dto.request.ApplyCrewReqDto;
 import clofi.runningplanet.crew.dto.request.CreateCrewReqDto;
+import clofi.runningplanet.crew.dto.request.ProceedApplyReqDto;
 import clofi.runningplanet.crew.dto.response.ApplyCrewResDto;
 import clofi.runningplanet.crew.dto.response.ApprovalMemberResDto;
 import clofi.runningplanet.crew.dto.response.FindAllCrewResDto;
@@ -97,6 +98,29 @@ public class CrewService {
 		List<CrewApplication> crewApplicationList = crewApplicationRepository.findAllByCrewId(crewId);
 		List<GetApplyCrewResDto> getApplyCrewResDtos = makeGetApplyDtoList(crewApplicationList);
 		return new ApprovalMemberResDto(getApplyCrewResDtos);
+	}
+
+	@Transactional
+	public void proceedApplyCrew(ProceedApplyReqDto reqDto, Long crewId, Long memberId) {
+		Crew findCrew = getCrewByCrewId(crewId);
+		Member leader = getMemberByMemberId(memberId);
+		CrewApplication crewApplication = getCrewApplicationByCrewIdAndMemberId(crewId, reqDto.memberId());
+		validateMemberNotInCrew(reqDto.memberId());
+		Member applyMember = getMemberByMemberId(reqDto.memberId());
+
+		if (reqDto.isApproval()) {
+			crewApplication.approve();
+			CrewMember crewMember = CrewMember.createMember(findCrew, applyMember);
+			crewMemberRepository.save(crewMember);
+		} else {
+			crewApplication.reject();
+		}
+	}
+
+	private CrewApplication getCrewApplicationByCrewIdAndMemberId(Long crewId, Long memberId) {
+		return crewApplicationRepository.findByCrewIdAndMemberId(crewId, memberId).orElseThrow(
+			() -> new NotFoundException("크루에 신청한 사용자가 아닙니다.")
+		);
 	}
 
 	private CrewMember getCrewMemberByMemberId(Long memberId) {

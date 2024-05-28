@@ -59,4 +59,12 @@ public class CrewApplication extends BaseSoftDeleteEntity {
 			throw new IllegalArgumentException("이미 신청한 크루입니다.");
 		}
 	}
+
+	public void approve() {
+		this.approval = Approval.APPROVE;
+	}
+
+	public void reject() {
+		this.approval = Approval.REJECT;
+	}
 }
