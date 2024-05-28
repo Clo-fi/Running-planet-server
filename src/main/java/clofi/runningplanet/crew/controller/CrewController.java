@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import clofi.runningplanet.crew.dto.request.ApplyCrewReqDto;
 import clofi.runningplanet.crew.dto.request.CreateCrewReqDto;
+import clofi.runningplanet.crew.dto.request.ProceedApplyReqDto;
 import clofi.runningplanet.crew.dto.response.ApplyCrewResDto;
 import clofi.runningplanet.crew.dto.response.ApprovalMemberResDto;
 import clofi.runningplanet.crew.dto.response.FindAllCrewResDto;
@@ -54,8 +55,15 @@ public class CrewController {
 	}
 
 	@GetMapping("/api/crew/{crewId}/request")
-	public ResponseEntity<ApprovalMemberResDto> getApplyCrewList(@PathVariable Long crewId,
+	public ResponseEntity<ApprovalMemberResDto> getApplyCrewList(@PathVariable("crewId") Long crewId,
 		@AuthenticationPrincipal CustomOAuth2User principal) {
 		return ResponseEntity.ok(crewService.getApplyCrewList(crewId, principal.getId()));
+	}
+
+	@PostMapping("/api/crew/{crewId}/request")
+	public ResponseEntity<Void> proceedApplyCrew(@PathVariable("crewId") Long crewId,
+		@RequestBody ProceedApplyReqDto reqDto, @AuthenticationPrincipal CustomOAuth2User principal) {
+		crewService.proceedApplyCrew(reqDto, crewId, principal.getId());
+		return ResponseEntity.ok().build();
 	}
 }
