@@ -663,7 +663,7 @@ class CrewServiceTest {
 
 	@DisplayName("크루 가입 신청하지 않은 사용자를 승인/거절할 경우 예외 발생")
 	@Test
-	void failApproveCrew() {
+	void failApproveCrewByNotApplyMember() {
 		//given
 		ProceedApplyReqDto reqDto = new ProceedApplyReqDto(2L, true);
 		Long crewId = 1L;
@@ -686,5 +686,44 @@ class CrewServiceTest {
 		//then
 		assertThatThrownBy(() -> crewService.proceedApplyCrew(reqDto, crewId, memberId))
 			.isInstanceOf(NotFoundException.class);
+	}
+
+	@DisplayName("이미 크루가 있는 사용자를 승인/거절할 경우 예외 발생")
+	@Test
+	void failApproveCrewByInCrew() {
+		//given
+		ProceedApplyReqDto reqDto = new ProceedApplyReqDto(2L, true);
+		Long crewId = 1L;
+		Long memberId = 1L;
+
+		Crew crew = new Crew(1L, 1L, "구름 크루", 10, 50,
+			RUNNING, MANUAL, "구름 크루는 성실한 크루", 5, 100,
+			0, 0);
+		Member member1 = Member.builder()
+			.id(2L)
+			.nickname("닉네임1")
+			.age(30)
+			.gender(Gender.MALE)
+			.profileImg("https://image-url1.com")
+			.avgDistance(50)
+			.totalDistance(2000)
+			.runScore(80)
+			.build();
+
+		CrewMember crewMember = new CrewMember(1L, crew, MEMBER, Role.LEADER);
+		CrewApplication crewApplication = new CrewApplication(1L, "크루 신청글", Approval.PENDING, crew, member1);
+
+		given(crewRepository.findById(anyLong()))
+			.willReturn(Optional.of(crew));
+		given(crewMemberRepository.findByMemberId(anyLong()))
+			.willReturn(Optional.of(crewMember))
+			.willReturn(Optional.of(CrewMember.createMember(crew, member1)));
+		given(crewApplicationRepository.findByCrewIdAndMemberId(anyLong(), anyLong()))
+			.willReturn(Optional.of(crewApplication));
+
+		//when
+		//then
+		assertThatThrownBy(() -> crewService.proceedApplyCrew(reqDto, crewId, memberId))
+			.isInstanceOf(ConflictException.class);
 	}
 }
