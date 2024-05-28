@@ -571,8 +571,8 @@ class CrewServiceTest {
 			.willReturn(Optional.empty());
 		given(crewApplicationRepository.findByCrewIdAndMemberId(anyLong(), anyLong()))
 			.willReturn(Optional.of(crewApplication));
-		given(crewMemberRepository.findByCrewId(anyLong()))
-			.willReturn(List.of(new CrewMember(null, null, null, null), new CrewMember(null, null, null, null)));
+		given(crewMemberRepository.countByCrewId(anyLong()))
+			.willReturn(1);
 		given(memberRepository.findById(anyLong()))
 			.willReturn(Optional.of(member1));
 		given(crewMemberRepository.save(any(CrewMember.class)))
@@ -759,8 +759,8 @@ class CrewServiceTest {
 			.willReturn(Optional.empty());
 		given(crewApplicationRepository.findByCrewIdAndMemberId(anyLong(), anyLong()))
 			.willReturn(Optional.of(crewApplication));
-		given(crewMemberRepository.findByCrewId(anyLong()))
-			.willReturn(List.of(new CrewMember(null, null, null, null), new CrewMember(null, null, null, null)));
+		given(crewMemberRepository.countByCrewId(anyLong()))
+			.willReturn(1);
 		given(memberRepository.findById(anyLong()))
 			.willReturn(Optional.empty());
 

@@ -128,9 +128,8 @@ public class CrewService {
 	}
 
 	private void validateCrewMemberLimit(Crew crew) {
-		List<CrewMember> crewMemberList = crewMemberRepository.findByCrewId(crew.getId());
-		int memberCnt = crewMemberList.size();
-		if (crew.getLimitMemberCnt() <= memberCnt) {
+		int memberCnt = crewMemberRepository.countByCrewId(crew.getId());
+		if (crew.checkReachedMemberLimit(memberCnt)) {
 			throw new ConflictException("최대 인원수를 초과해서 크루원을 받을 수 없습니다.");
 		}
 	}

@@ -90,4 +90,8 @@ public class Crew extends BaseSoftDeleteEntity {
 			throw new IllegalArgumentException("운동 점수가 제한 운동 점수보다 낮아 지원할 수 없습니다.");
 		}
 	}
+
+	public boolean checkReachedMemberLimit(int currentMemberCnt) {
+		return currentMemberCnt >= limitMemberCnt;
+	}
 }

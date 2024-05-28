@@ -15,4 +15,6 @@ public interface CrewMemberRepository extends JpaRepository<CrewMember, Long> {
 	boolean existsByMemberId(Long memberId);
 
 	List<CrewMember> findByCrewId(Long crewId);
+
+	int countByCrewId(Long id);
 }
