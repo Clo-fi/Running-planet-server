@@ -19,4 +19,30 @@ class CrewApplicationTest {
 			.isInstanceOf(IllegalArgumentException.class);
 
 	}
+
+	@DisplayName("크루 가입 승인 메서드 테스트")
+	@Test
+	void successApprove() {
+		//given
+		CrewApplication crewApplication = new CrewApplication(1L, "크루 신청서", Approval.PENDING, null, null);
+
+		//when
+		crewApplication.approve();
+
+		//then
+		assertThat(crewApplication.getApproval()).isEqualTo(Approval.APPROVE);
+	}
+
+	@DisplayName("크루 가입 거절 메서드 테스트")
+	@Test
+	void successReject() {
+		//given
+		CrewApplication crewApplication = new CrewApplication(1L, "크루 신청서", Approval.PENDING, null, null);
+
+		//when
+		crewApplication.reject();
+
+		//then
+		assertThat(crewApplication.getApproval()).isEqualTo(Approval.REJECT);
+	}
 }
