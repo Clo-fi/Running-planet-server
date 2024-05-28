@@ -3,6 +3,7 @@ package clofi.runningplanet.crew.service;
 import static clofi.runningplanet.crew.domain.ApprovalType.*;
 import static clofi.runningplanet.crew.domain.Category.*;
 import static org.assertj.core.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.BDDMockito.*;
 
 import java.util.Collections;
@@ -28,6 +29,7 @@ import clofi.runningplanet.crew.dto.CrewLeaderDto;
 import clofi.runningplanet.crew.dto.RuleDto;
 import clofi.runningplanet.crew.dto.request.ApplyCrewReqDto;
 import clofi.runningplanet.crew.dto.request.CreateCrewReqDto;
+import clofi.runningplanet.crew.dto.request.ProceedApplyReqDto;
 import clofi.runningplanet.crew.dto.response.ApplyCrewResDto;
 import clofi.runningplanet.crew.dto.response.ApprovalMemberResDto;
 import clofi.runningplanet.crew.dto.response.FindAllCrewResDto;
@@ -535,5 +537,87 @@ class CrewServiceTest {
 		//then
 		assertThatThrownBy(() -> crewService.getApplyCrewList(crewId, memberId))
 			.isInstanceOf(NotFoundException.class);
+	}
+
+	@DisplayName("크루 가입 승인 성공")
+	@Test
+	void successApproveCrew() {
+		//given
+		ProceedApplyReqDto reqDto = new ProceedApplyReqDto(2L, true);
+		Long crewId = 1L;
+		Long memberId = 1L;
+
+		Crew crew = new Crew(1L, 1L, "구름 크루", 10, 50,
+			RUNNING, MANUAL, "구름 크루는 성실한 크루", 5, 100,
+			0, 0);
+		Member member1 = Member.builder()
+			.id(2L)
+			.nickname("닉네임1")
+			.age(30)
+			.gender(Gender.MALE)
+			.profileImg("https://image-url1.com")
+			.avgDistance(50)
+			.totalDistance(2000)
+			.runScore(80)
+			.build();
+
+		CrewMember crewMember = new CrewMember(1L, crew, MEMBER, Role.LEADER);
+		CrewApplication crewApplication = new CrewApplication(1L, "크루 신청글", Approval.PENDING, crew, member1);
+
+		given(crewRepository.findById(anyLong()))
+			.willReturn(Optional.of(crew));
+		given(crewMemberRepository.findByMemberId(anyLong()))
+			.willReturn(Optional.of(crewMember))
+			.willReturn(Optional.empty());
+		given(crewApplicationRepository.findByCrewIdAndMemberId(anyLong(), anyLong()))
+			.willReturn(Optional.of(crewApplication));
+		given(crewMemberRepository.findByCrewId(anyLong()))
+			.willReturn(List.of(new CrewMember(null, null, null, null), new CrewMember(null, null, null, null)));
+		given(memberRepository.findById(anyLong()))
+			.willReturn(Optional.of(member1));
+		given(crewMemberRepository.save(any(CrewMember.class)))
+			.willReturn(crewMember);
+
+		//when
+		//then
+		assertDoesNotThrow(() -> crewService.proceedApplyCrew(reqDto, crewId, memberId));
+	}
+
+	@DisplayName("크루 가입 거절 성공")
+	@Test
+	void test1() {
+		//given
+		ProceedApplyReqDto reqDto = new ProceedApplyReqDto(2L, false);
+		Long crewId = 1L;
+		Long memberId = 1L;
+
+		Crew crew = new Crew(1L, 1L, "구름 크루", 10, 50,
+			RUNNING, MANUAL, "구름 크루는 성실한 크루", 5, 100,
+			0, 0);
+		Member member1 = Member.builder()
+			.id(2L)
+			.nickname("닉네임1")
+			.age(30)
+			.gender(Gender.MALE)
+			.profileImg("https://image-url1.com")
+			.avgDistance(50)
+			.totalDistance(2000)
+			.runScore(80)
+			.build();
+
+		CrewMember crewMember = new CrewMember(1L, crew, MEMBER, Role.LEADER);
+		CrewApplication crewApplication = new CrewApplication(1L, "크루 신청글", Approval.PENDING, crew, member1);
+
+		given(crewRepository.findById(anyLong()))
+			.willReturn(Optional.of(crew));
+		given(crewMemberRepository.findByMemberId(anyLong()))
+			.willReturn(Optional.of(crewMember))
+			.willReturn(Optional.empty());
+		given(crewApplicationRepository.findByCrewIdAndMemberId(anyLong(), anyLong()))
+			.willReturn(Optional.of(crewApplication));
+
+		//when
+		//then
+		assertDoesNotThrow(() -> crewService.proceedApplyCrew(reqDto, crewId, memberId));
 	}
 }
