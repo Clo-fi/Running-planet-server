@@ -35,6 +35,7 @@ import clofi.runningplanet.crew.dto.CrewLeaderDto;
 import clofi.runningplanet.crew.dto.RuleDto;
 import clofi.runningplanet.crew.dto.request.ApplyCrewReqDto;
 import clofi.runningplanet.crew.dto.request.CreateCrewReqDto;
+import clofi.runningplanet.crew.dto.request.ProceedApplyReqDto;
 import clofi.runningplanet.crew.dto.response.ApplyCrewResDto;
 import clofi.runningplanet.crew.dto.response.ApprovalMemberResDto;
 import clofi.runningplanet.crew.dto.response.FindAllCrewResDto;
@@ -231,6 +232,27 @@ class CrewControllerTest {
 		assertThat(expected).isEqualTo(resDto);
 	}
 
+	@DisplayName("크루 가입 승인 성공")
+	@WithMockCustomMember
+	@Test
+	void successApprove() throws Exception {
+		//given
+		ProceedApplyReqDto reqDto = new ProceedApplyReqDto(2L, true);
+		Long crewId = 1L;
+
+		doNothing()
+			.when(crewService)
+			.proceedApplyCrew(any(ProceedApplyReqDto.class), anyLong(), anyLong());
+
+		//when
+		ResultActions resultActions = proceedApplyCrew(reqDto, crewId);
+
+		//then
+		resultActions
+			.andExpect(status().isOk())
+			.andReturn();
+	}
+
 	private ResultActions createCrew(CreateCrewReqDto reqDto) throws Exception {
 		return mockMvc.perform(post("/api/crew")
 			.contentType(APPLICATION_JSON)
@@ -258,5 +280,11 @@ class CrewControllerTest {
 	private ResultActions getApplyCrewList(Long crewId) throws Exception {
 		return mockMvc.perform(get("/api/crew/{crewId}/request", crewId)
 			.contentType(APPLICATION_JSON));
+	}
+
+	private ResultActions proceedApplyCrew(ProceedApplyReqDto reqDto, Long crewId) throws Exception {
+		return mockMvc.perform(post("/api/crew/{crewId}/request", crewId)
+			.contentType(APPLICATION_JSON)
+			.content(objectMapper.writeValueAsString(reqDto)));
 	}
 }
