@@ -25,7 +25,7 @@ public record ProfileResponse(
 ) {
 	public ProfileResponse(Member member, CrewMember crewMember) {
 		this(member.getNickname(), member.getGender(), member.getAge(), member.getProfileImg(), member.getRunScore(),
-			calculateAvgPace(member.getAvgPace())
+			member.getAvgPace() != null ? calculateAvgPace(member.getAvgPace()) : null
 			, member.getAvgDistance(), member.getTotalDistance(), crewMember != null? crewMember.getCrew().getCrewName() : null);
 	}
 
