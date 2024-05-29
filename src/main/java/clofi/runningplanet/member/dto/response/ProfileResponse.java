@@ -25,14 +25,14 @@ public record ProfileResponse(
 ) {
 	public ProfileResponse(Member member, CrewMember crewMember) {
 		this(member.getNickname(), member.getGender(), member.getAge(), member.getProfileImg(), member.getRunScore(),
-			member.getAvgPace() != null ? calculateAvgPace(member.getAvgPace()) : null
+			member.getAvgPace() != null ? calculateAvgPace(member.getAvgPace()) : new AvgPace(null, null)
 			, member.getAvgDistance(), member.getTotalDistance(), crewMember != null? crewMember.getCrew().getCrewName() : null);
 	}
 
 	public record AvgPace(
-		int min,
+		Integer min,
 
-		int sec
+		Integer sec
 	) {
 	}
 

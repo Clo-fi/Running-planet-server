@@ -30,16 +30,16 @@ public record SelfProfileResponse(
 	public SelfProfileResponse(Member member, CrewMember crewMember) {
 		this(member.getNickname(), member.getGender(), member.getAge(), member.getWeight(), member.getProfileImg(),
 			member.getRunScore(),
-			member.getAvgPace() != null ? calculateAvgPace(member.getAvgPace()) : null
+			member.getAvgPace() != null ? calculateAvgPace(member.getAvgPace()) : new AvgPace(null, null)
 			, member.getAvgDistance(), member.getTotalDistance(),
 			crewMember != null ? crewMember.getCrew().getCrewName() : null,
 			(crewMember != null && crewMember.getCrew().getId() != null) ? crewMember.getCrew().getId() : null);
 	}
 
 	public record AvgPace(
-		int min,
+		Integer min,
 
-		int sec
+		Integer sec
 	) {
 	}
 
